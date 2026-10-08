@@ -72,6 +72,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    // Agregamos Material Icons Extended para tener los iconos adicionales pedidos
+    implementation("androidx.compose.material:material-icons-extended")
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
