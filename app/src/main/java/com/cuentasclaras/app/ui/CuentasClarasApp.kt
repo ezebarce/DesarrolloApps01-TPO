@@ -8,6 +8,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navOptions
 import com.cuentasclaras.app.core.navigation.*
 
 @Composable
@@ -36,13 +37,14 @@ fun CuentasClarasApp() {
                             selected = selected,
                             onClick = {
                                 // Navegación a destinos Top Level
-                                navController.navigate(destination.route) {
+                                val navOptions = navOptions {
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true
                                     }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
+                                navController.navigate(destination.route, navOptions)
                             },
                             icon = { 
                                 // TODO: Implementar Badges en el NavigationBarItem
