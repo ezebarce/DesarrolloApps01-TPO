@@ -32,7 +32,10 @@ fun CuentasClarasNavHost(
             )
         }
         composable<Screen.Votaciones> {
-            VotacionesScreen()
+            VotacionesScreen(
+                onNavigateToDetalleVotacion = { id -> navController.navigate(Screen.DetalleVotacion(id)) },
+                onNavigateToFormularioVotacion = { id -> navController.navigate(Screen.FormularioVotacion(id)) }
+            )
         }
         composable<Screen.Alertas> {
             AlertasScreen()
@@ -57,6 +60,17 @@ fun CuentasClarasNavHost(
         }
         composable<Screen.FormularioPresupuesto> {
             com.cuentasclaras.app.feature.gastos.FormularioPresupuestoScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable<Screen.DetalleVotacion> {
+            com.cuentasclaras.app.feature.votaciones.DetalleVotacionScreen(
+                onBack = { navController.popBackStack() },
+                onEditVotacion = { id -> navController.navigate(Screen.FormularioVotacion(id)) }
+            )
+        }
+        composable<Screen.FormularioVotacion> {
+            com.cuentasclaras.app.feature.votaciones.FormularioVotacionScreen(
                 onBack = { navController.popBackStack() }
             )
         }
