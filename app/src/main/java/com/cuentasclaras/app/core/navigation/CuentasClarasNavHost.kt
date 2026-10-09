@@ -22,7 +22,12 @@ fun CuentasClarasNavHost(
         modifier = modifier
     ) {
         composable<Screen.Inicio> {
-            InicioScreen()
+            InicioScreen(
+                onNavigateToGastos = { navController.navigate(Screen.Gastos) },
+                onNavigateToVotacion = { id -> navController.navigate(Screen.DetalleVotacion(id)) },
+                onNavigateToDetalleGasto = { id -> navController.navigate(Screen.DetalleGasto(id)) },
+                onNavigateToPerfil = { navController.navigate(Screen.Perfil) }
+            )
         }
         composable<Screen.Gastos> {
             GastosScreen(
@@ -38,7 +43,16 @@ fun CuentasClarasNavHost(
             )
         }
         composable<Screen.Alertas> {
-            AlertasScreen()
+            AlertasScreen(
+                onNavigateToFormulario = { id -> navController.navigate(Screen.FormularioAlerta(id)) },
+                onNavigateToGasto = { id -> navController.navigate(Screen.DetalleGasto(id)) },
+                onNavigateToVotacion = { id -> navController.navigate(Screen.DetalleVotacion(id)) }
+            )
+        }
+        composable<Screen.FormularioAlerta> {
+            com.cuentasclaras.app.feature.alertas.FormularioAlertaScreen(
+                onBack = { navController.popBackStack() }
+            )
         }
         composable<Screen.DetalleGasto> {
             DetalleGastoScreen(
@@ -71,6 +85,11 @@ fun CuentasClarasNavHost(
         }
         composable<Screen.FormularioVotacion> {
             com.cuentasclaras.app.feature.votaciones.FormularioVotacionScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable<Screen.Perfil> {
+            com.cuentasclaras.app.feature.perfil.PerfilScreen(
                 onBack = { navController.popBackStack() }
             )
         }
