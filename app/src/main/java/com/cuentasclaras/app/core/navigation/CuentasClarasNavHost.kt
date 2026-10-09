@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.cuentasclaras.app.feature.alertas.AlertasScreen
 import com.cuentasclaras.app.feature.gastos.GastosScreen
+import com.cuentasclaras.app.feature.gastos.DetalleGastoScreen
 import com.cuentasclaras.app.feature.inicio.InicioScreen
 import com.cuentasclaras.app.feature.votaciones.VotacionesScreen
 
@@ -24,13 +25,40 @@ fun CuentasClarasNavHost(
             InicioScreen()
         }
         composable<Screen.Gastos> {
-            GastosScreen()
+            GastosScreen(
+                onNavigateToDetalleGasto = { id -> navController.navigate(Screen.DetalleGasto(id)) },
+                onNavigateToFormularioConcepto = { id -> navController.navigate(Screen.FormularioConcepto(id)) },
+                onNavigateToFormularioGasto = { navController.navigate(Screen.FormularioGasto(null)) }
+            )
         }
         composable<Screen.Votaciones> {
             VotacionesScreen()
         }
         composable<Screen.Alertas> {
             AlertasScreen()
+        }
+        composable<Screen.DetalleGasto> {
+            DetalleGastoScreen(
+                onBack = { navController.popBackStack() },
+                onEditGasto = { id -> navController.navigate(Screen.FormularioGasto(id)) },
+                onAddPresupuesto = { gastoId -> navController.navigate(Screen.FormularioPresupuesto(gastoId, null)) },
+                onEditPresupuesto = { gastoId, pId -> navController.navigate(Screen.FormularioPresupuesto(gastoId, pId)) }
+            )
+        }
+        composable<Screen.FormularioGasto> {
+            com.cuentasclaras.app.feature.gastos.FormularioGastoScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable<Screen.FormularioConcepto> {
+            com.cuentasclaras.app.feature.gastos.FormularioConceptoScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable<Screen.FormularioPresupuesto> {
+            com.cuentasclaras.app.feature.gastos.FormularioPresupuestoScreen(
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }

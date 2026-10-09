@@ -33,6 +33,9 @@ import java.time.YearMonth
 
 @Composable
 fun GastosScreen(
+    onNavigateToDetalleGasto: (Long) -> Unit,
+    onNavigateToFormularioConcepto: (Long?) -> Unit,
+    onNavigateToFormularioGasto: () -> Unit,
     viewModel: GastosViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -48,7 +51,13 @@ fun GastosScreen(
                 val state = (uiState as UiState.Contenido<GastosScreenState>).datos
                 if (state.puedeGestionarGastos) {
                     FloatingActionButton(
-                        onClick = { /* TODO: Nuevo Gasto/Impuesto */ },
+                        onClick = { 
+                            if (state.pestanaActiva == 3) {
+                                onNavigateToFormularioConcepto(null)
+                            } else {
+                                onNavigateToFormularioGasto()
+                            }
+                        },
                         containerColor = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Nuevo")
@@ -77,8 +86,8 @@ fun GastosScreen(
                     onPeriodoChange = viewModel::cambiarPeriodo,
                     onBusquedaChange = viewModel::buscar,
                     onRubroChange = viewModel::cambiarRubro,
-                    onGastoClick = { /* TODO */ },
-                    onConceptoClick = { /* TODO */ }
+                    onGastoClick = onNavigateToDetalleGasto,
+                    onConceptoClick = onNavigateToFormularioConcepto
                 )
             }
         }
