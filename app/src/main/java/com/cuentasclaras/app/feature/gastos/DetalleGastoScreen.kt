@@ -333,7 +333,7 @@ fun TarjetaPresupuesto(
                 val diff = (p.montoCentavos - referenciaMercado).toDouble() / referenciaMercado
                 val prefix = if (diff > 0) "+" else ""
                 val color = if (diff > 0.10) MaterialTheme.colorScheme.error else CuentasClarasTheme.extendedColors.tertiaryFixed
-                Text("$prefix${FormateadorMoneda.formatearPorcentaje(diff)} vs Media", style = Typography.labelSmall, color = color)
+                Text("$prefix${FormateadorMoneda.formatearPorcentaje(diff * 100)} vs Media", style = Typography.labelSmall, color = color)
             }
         }
 

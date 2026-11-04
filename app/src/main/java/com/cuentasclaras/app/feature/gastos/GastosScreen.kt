@@ -247,7 +247,7 @@ fun TarjetaResumenPeriodo(
                     Text("Tope asignado: ${FormateadorMoneda.formatearCentavosSinDecimales(topeCentavos)}", style = Typography.bodySmall)
                 }
                 Box(modifier = Modifier.background(colorDesvio, RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 4.dp)) {
-                    Text(FormateadorMoneda.formatearPorcentaje(porcentaje), style = Typography.labelMedium, color = textColorDesvio)
+                    Text(FormateadorMoneda.formatearPorcentaje(porcentaje * 100), style = Typography.labelMedium, color = textColorDesvio)
                 }
             }
         }
@@ -283,8 +283,8 @@ fun ItemGasto(gasto: Gasto, onClick: () -> Unit) {
             val desvioInfo = if (gasto.referenciaMercadoCentavos != null) {
                 val diff = (gasto.montoCentavos - gasto.referenciaMercadoCentavos).toDouble() / gasto.referenciaMercadoCentavos
                 when {
-                    diff > 0.10 -> Pair("+" + FormateadorMoneda.formatearPorcentaje(diff), BadgeAuditoriaTipo.DESVIO)
-                    diff < -0.10 -> Pair("-" + FormateadorMoneda.formatearPorcentaje(kotlin.math.abs(diff)), BadgeAuditoriaTipo.VERIFICADO)
+                    diff > 0.10 -> Pair("+" + FormateadorMoneda.formatearPorcentaje(diff * 100), BadgeAuditoriaTipo.DESVIO)
+                    diff < -0.10 -> Pair("-" + FormateadorMoneda.formatearPorcentaje(kotlin.math.abs(diff) * 100), BadgeAuditoriaTipo.VERIFICADO)
                     else -> Pair("En precio de mercado", BadgeAuditoriaTipo.VERIFICADO)
                 }
             } else if (gasto.requiereLicitacion) {

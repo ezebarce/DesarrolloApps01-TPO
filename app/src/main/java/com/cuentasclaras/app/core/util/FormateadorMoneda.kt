@@ -43,8 +43,13 @@ object FormateadorMoneda {
         }
     }
 
+    /**
+     * Recibe el valor en puntos porcentuales: 68.4 -> "68,40 %".
+     * Si se tiene una fracción (0.684), multiplicarla por 100 antes de llamar.
+     * (El patrón "%" de DecimalFormat multiplicaba por 100 y por eso no se usa).
+     */
     fun formatearPorcentaje(valor: Double): String {
-        val formatoPorcentaje = DecimalFormat("#,##0.00 %", symbols)
-        return formatoPorcentaje.format(valor).replace("%", "%").trim()
+        val formatoPorcentaje = DecimalFormat("#,##0.00", symbols)
+        return "${formatoPorcentaje.format(valor)} %"
     }
 }

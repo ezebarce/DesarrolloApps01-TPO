@@ -201,7 +201,7 @@ fun ItemVotacion(resumen: VotacionResumen, onClick: () -> Unit) {
                     } else if (resumen.porcentajeAprobacion != null) {
                         val aprobada = resumen.porcentajeAprobacion >= 0.5
                         BadgeAuditoria(
-                            texto = if (aprobada) "Aprobada ${FormateadorMoneda.formatearPorcentaje(resumen.porcentajeAprobacion)}" else "Rechazada ${FormateadorMoneda.formatearPorcentaje(resumen.porcentajeAprobacion)}",
+                            texto = if (aprobada) "Aprobada ${FormateadorMoneda.formatearPorcentaje(resumen.porcentajeAprobacion * 100)}" else "Rechazada ${FormateadorMoneda.formatearPorcentaje(resumen.porcentajeAprobacion * 100)}",
                             tipo = if (aprobada) BadgeAuditoriaTipo.VERIFICADO else BadgeAuditoriaTipo.DESVIO
                         )
                     }
