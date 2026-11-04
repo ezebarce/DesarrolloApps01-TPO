@@ -1,5 +1,6 @@
 package com.cuentasclaras.app.feature.votaciones
 
+import android.database.SQLException
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -116,15 +117,23 @@ class DetalleVotacionViewModel @Inject constructor(
             val propietario = infoConsorcioRepository.observarPropietario(propietarioId).first()
 
             if (propietario != null) {
-                when (val result = registrarVotoUseCase(votacionId, opcionId, propietario)) {
-                    is RegistrarVotoUseCase.Result.Exito -> {
-                        _mensaje.value = "¡Voto registrado con éxito! Comprobante: ${result.comprobante}"
-                        _opcionElegidaId.value = null // Resetea seleccion
-                        _refrescar.value += 1 // Forzamos recálculo de resultados en UI Flow
+                try {
+                    when (val result = registrarVotoUseCase(votacionId, opcionId, propietario)) {
+                        is RegistrarVotoUseCase.Result.Exito -> {
+                            _mensaje.value = "¡Voto registrado con éxito! Comprobante: ${result.comprobante}"
+                            _opcionElegidaId.value = null // Resetea seleccion
+                            _refrescar.value += 1 // Forzamos recálculo de resultados en UI Flow
+                        }
+                        RegistrarVotoUseCase.Result.Error.YaVoto -> {
+                            _mensaje.value = "Ya registraste tu voto en esta votación. Se conserva tu voto original."
+                        }
+                        is RegistrarVotoUseCase.Result.Error -> {
+                            _mensaje.value = "No se pudo registrar el voto."
+                        }
                     }
-                    is RegistrarVotoUseCase.Result.Error -> {
-                        _mensaje.value = "No se pudo registrar el voto."
-                    }
+                } catch (e: SQLException) {
+                    // Un error de la base de datos no debe cerrar la aplicación.
+                    _mensaje.value = "No se pudo registrar el voto."
                 }
             }
             _confirmandoVoto.value = false

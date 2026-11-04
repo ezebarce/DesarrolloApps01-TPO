@@ -81,5 +81,10 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
 
+    // Pruebas instrumentadas de Room (base de datos en memoria)
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+
     debugImplementation(libs.androidx.ui.tooling)
 }

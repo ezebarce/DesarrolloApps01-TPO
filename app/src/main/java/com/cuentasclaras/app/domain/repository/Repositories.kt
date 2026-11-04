@@ -37,9 +37,17 @@ interface VotacionRepository {
     fun observarOpciones(votacionId: Long): Flow<List<OpcionVoto>>
     suspend fun guardarOpcion(opcion: OpcionVoto): Long
     suspend fun eliminarOpcionesDeVotacion(votacionId: Long)
-    
+
+    /**
+     * Crea o edita la votación y sus opciones de forma atómica.
+     * Devuelve el id guardado, o null si la votación ya tiene votos y por eso no se puede editar.
+     */
+    suspend fun guardarVotacionConOpciones(votacion: Votacion, opciones: List<OpcionVoto>): Long?
+
     fun observarVotoPropietario(votacionId: Long, propietarioId: Long): Flow<Voto?>
     fun observarVotos(votacionId: Long): Flow<List<Voto>>
+
+    /** Devuelve el id del voto, o -1 si el propietario ya había votado (se conserva el voto original). */
     suspend fun registrarVoto(voto: Voto): Long
 }
 

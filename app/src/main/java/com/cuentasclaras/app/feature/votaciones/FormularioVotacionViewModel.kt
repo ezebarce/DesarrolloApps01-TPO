@@ -1,5 +1,6 @@
 package com.cuentasclaras.app.feature.votaciones
 
+import android.database.SQLException
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -137,28 +138,37 @@ class FormularioVotacionViewModel @Inject constructor(
             montoCentavos = montoCentavos
         )
 
+        val opciones = state.opciones.mapIndexed { index, op ->
+            OpcionVoto(
+                votacionId = votacion.id,
+                titulo = op.titulo,
+                descripcion = op.descripcion,
+                tipo = op.tipo,
+                recomendada = op.recomendada,
+                orden = index
+            )
+        }
+
         viewModelScope.launch {
-            val savedId = repository.guardarVotacion(votacion)
-            
-            // Re-guardamos opciones. Por simplicidad borramos y creamos (ya que en Formulario no se guardan ids intermedios en la UI simplificada)
-            if (state.id != null) {
-                repository.eliminarOpcionesDeVotacion(savedId)
-            }
-            
-            state.opciones.forEachIndexed { index, op ->
-                repository.guardarOpcion(
-                    OpcionVoto(
-                        votacionId = savedId,
-                        titulo = op.titulo,
-                        descripcion = op.descripcion,
-                        tipo = op.tipo,
-                        recomendada = op.recomendada,
-                        orden = index
-                    )
-                )
+            // Votación y opciones se guardan juntas en una transacción.
+            // Si la votación ya tiene votos, el repositorio no modifica nada y devuelve null.
+            val guardadoId = try {
+                repository.guardarVotacionConOpciones(votacion, opciones)
+            } catch (e: SQLException) {
+                _uiState.update { it.copy(isLoading = false, error = "No se pudo guardar la votación.") }
+                return@launch
             }
 
-            _uiState.update { it.copy(isLoading = false, guardadoExitoso = true) }
+            if (guardadoId == null) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Esta votación ya recibió votos: no se pueden modificar sus opciones ni sus condiciones."
+                    )
+                }
+            } else {
+                _uiState.update { it.copy(isLoading = false, guardadoExitoso = true) }
+            }
         }
     }
 }

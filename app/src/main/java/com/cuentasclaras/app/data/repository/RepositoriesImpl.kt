@@ -18,8 +18,14 @@ class GastoRepositoryImpl(private val dao: GastoDao) : GastoRepository {
     override fun observarGasto(gastoId: Long): Flow<Gasto?> =
         dao.observarGasto(gastoId).map { it?.toDomain() }
 
+    // id == 0: gasto nuevo (INSERT). Si ya existe: UPDATE, que conserva presupuestos y firmas.
     override suspend fun guardarGasto(gasto: Gasto): Long =
-        dao.insertarGasto(gasto.toEntity())
+        if (gasto.id == 0L) {
+            dao.insertarGasto(gasto.toEntity())
+        } else {
+            dao.actualizarGasto(gasto.toEntity())
+            gasto.id
+        }
 
     override suspend fun eliminarGasto(gastoId: Long) =
         dao.eliminarGasto(gastoId)
@@ -68,7 +74,12 @@ class VotacionRepositoryImpl(private val dao: VotacionDao) : VotacionRepository 
         dao.observarVotacion(votacionId).map { it?.toDomain() }
 
     override suspend fun guardarVotacion(votacion: Votacion): Long =
-        dao.insertarVotacion(votacion.toEntity())
+        if (votacion.id == 0L) {
+            dao.insertarVotacion(votacion.toEntity())
+        } else {
+            dao.actualizarVotacion(votacion.toEntity())
+            votacion.id
+        }
 
     override suspend fun eliminarVotacion(votacionId: Long) =
         dao.eliminarVotacion(votacionId)
@@ -81,6 +92,9 @@ class VotacionRepositoryImpl(private val dao: VotacionDao) : VotacionRepository 
 
     override suspend fun eliminarOpcionesDeVotacion(votacionId: Long) =
         dao.eliminarOpcionesDeVotacion(votacionId)
+
+    override suspend fun guardarVotacionConOpciones(votacion: Votacion, opciones: List<OpcionVoto>): Long? =
+        dao.guardarVotacionConOpciones(votacion.toEntity(), opciones.map { it.toEntity() })
 
     override fun observarVotoPropietario(votacionId: Long, propietarioId: Long): Flow<Voto?> =
         dao.observarVotoPropietario(votacionId, propietarioId).map { it?.toDomain() }

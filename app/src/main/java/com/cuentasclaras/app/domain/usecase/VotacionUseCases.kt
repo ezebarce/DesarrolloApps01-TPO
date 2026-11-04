@@ -39,7 +39,12 @@ class RegistrarVotoUseCase(private val repository: VotacionRepository) {
             comprobante = comprobante
         )
 
-        repository.registrarVoto(voto)
+        // La verificación anterior cubre el caso normal; si igualmente llega un voto
+        // duplicado (por ejemplo, un doble toque), la base lo rechaza y devuelve -1.
+        val votoId = repository.registrarVoto(voto)
+        if (votoId == -1L) {
+            return Result.Error.YaVoto
+        }
         return Result.Exito(comprobante)
     }
 }

@@ -14,8 +14,15 @@ interface GastoDao {
     @Query("SELECT * FROM gasto WHERE id = :id")
     fun observarGasto(id: Long): Flow<GastoEntity?>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    // Solo para gastos nuevos. No usamos REPLACE: en SQLite REPLACE borra la fila
+    // existente y la vuelve a insertar, y el borrado dispara el CASCADE de
+    // presupuestos y firmas.
+    @Insert
     suspend fun insertarGasto(gasto: GastoEntity): Long
+
+    // Para editar: UPDATE modifica la fila en su lugar y no toca los registros hijos.
+    @Update
+    suspend fun actualizarGasto(gasto: GastoEntity)
 
     @Query("DELETE FROM gasto WHERE id = :id")
     suspend fun eliminarGasto(id: Long)
@@ -65,8 +72,12 @@ interface VotacionDao {
     @Query("SELECT * FROM votacion WHERE id = :id")
     fun observarVotacion(id: Long): Flow<VotacionEntity?>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    // Solo para votaciones nuevas (REPLACE borraría opciones y votos por CASCADE).
+    @Insert
     suspend fun insertarVotacion(votacion: VotacionEntity): Long
+
+    @Update
+    suspend fun actualizarVotacion(votacion: VotacionEntity)
 
     @Query("DELETE FROM votacion WHERE id = :id")
     suspend fun eliminarVotacion(id: Long)
@@ -74,11 +85,49 @@ interface VotacionDao {
     @Query("SELECT * FROM opcion_voto WHERE votacionId = :votacionId ORDER BY orden ASC")
     fun observarOpciones(votacionId: Long): Flow<List<OpcionVotoEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     suspend fun insertarOpcion(opcion: OpcionVotoEntity): Long
 
     @Query("DELETE FROM opcion_voto WHERE votacionId = :votacionId")
     suspend fun eliminarOpcionesDeVotacion(votacionId: Long)
+
+    // Votos registrados como filas de la tabla voto.
+    @Query("SELECT COUNT(*) FROM voto WHERE votacionId = :votacionId")
+    suspend fun contarVotos(votacionId: Long): Int
+
+    // Votos de demostración que el sembrador guarda como totales dentro de cada opción.
+    @Query("SELECT COALESCE(SUM(unidadesAcumuladas), 0) FROM opcion_voto WHERE votacionId = :votacionId")
+    suspend fun contarVotosAcumulados(votacionId: Long): Int
+
+    /**
+     * Crea o edita una votación junto con sus opciones en una única transacción
+     * (si algo falla, no queda nada guardado a medias).
+     *
+     * Regla del MVP: una votación que ya recibió votos no se puede editar,
+     * porque cambiar sus opciones o condiciones alteraría lo que se votó.
+     * En ese caso no se modifica nada y se devuelve null.
+     */
+    @Transaction
+    suspend fun guardarVotacionConOpciones(
+        votacion: VotacionEntity,
+        opciones: List<OpcionVotoEntity>
+    ): Long? {
+        if (votacion.id == 0L) {
+            val nuevoId = insertarVotacion(votacion)
+            opciones.forEach { insertarOpcion(it.copy(votacionId = nuevoId)) }
+            return nuevoId
+        }
+
+        if (contarVotos(votacion.id) > 0 || contarVotosAcumulados(votacion.id) > 0) {
+            return null
+        }
+
+        // Sin votos: reemplazar las opciones no puede borrar ningún voto.
+        actualizarVotacion(votacion)
+        eliminarOpcionesDeVotacion(votacion.id)
+        opciones.forEach { insertarOpcion(it.copy(votacionId = votacion.id)) }
+        return votacion.id
+    }
 
     @Query("SELECT * FROM voto WHERE votacionId = :votacionId AND propietarioId = :propietarioId")
     fun observarVotoPropietario(votacionId: Long, propietarioId: Long): Flow<VotoEntity?>
@@ -86,7 +135,11 @@ interface VotacionDao {
     @Query("SELECT * FROM voto WHERE votacionId = :votacionId")
     fun observarVotos(votacionId: Long): Flow<List<VotoEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    // IGNORE: si ya existe un voto de ese propietario en esa votación (índice único
+    // votacionId + propietarioId), no se inserta nada y Room devuelve -1.
+    // El voto original nunca se reemplaza. La comprobación y la inserción son una
+    // sola sentencia SQL, por lo que es atómica.
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertarVoto(voto: VotoEntity): Long
 }
 
