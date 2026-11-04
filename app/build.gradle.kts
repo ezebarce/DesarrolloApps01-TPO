@@ -9,7 +9,7 @@ plugins {
 
 extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
     namespace = "com.cuentasclaras.app"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.cuentasclaras.app"

@@ -1,0 +1,54 @@
+# --- Gradle ---
+.gradle/
+.kotlin/
+build/
+**/build/
+
+# --- Configuración local (rutas propias de cada equipo) ---
+local.properties
+
+# --- Android Studio / IntelliJ ---
+# Se versionan solo los archivos compartidos y neutrales de .idea:
+#   .idea/.gitignore, .idea/.name, .idea/vcs.xml, .idea/AndroidProjectSystem.xml,
+#   .idea/runConfigurations.xml, .idea/inspectionProfiles/
+# El resto depende del equipo (JDK, emuladores, rutas) y Android Studio lo regenera.
+*.iml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/modules/
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/compiler.xml
+.idea/gradle.xml
+.idea/misc.xml
+.idea/jarRepositories.xml
+.idea/deploymentTargetSelector.xml
+.idea/deploymentTargetDropDown.xml
+.idea/deviceManager.xml
+.idea/migrations.xml
+.idea/androidTestResultsUserPreferences.xml
+.idea/appInsightsSettings.xml
+.idea/studiobot.xml
+.idea/claudeCodeEditorTabs.xml
+
+# --- Artefactos de compilación y depuración ---
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+captures/
+.externalNativeBuild/
+.cxx/
+*.hprof
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db
+desktop.ini
