@@ -1,5 +1,6 @@
 package com.cuentasclaras.app.data
 
+import android.database.SQLException
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -16,6 +17,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -46,16 +48,8 @@ class IntegridadDatosTest {
         gastoRepository = GastoRepositoryImpl(db.gastoDao())
         votacionRepository = VotacionRepositoryImpl(db.votacionDao())
 
-        val infoDao = db.infoConsorcioDao()
-        consorcioId = infoDao.insertarConsorcio(
-            ConsorcioEntity(nombre = "Consorcio de prueba", direccion = "Calle 123", unidadesTotales = 10)
-        )
-        val propietarioId = infoDao.insertarPropietario(
-            PropietarioEntity(consorcioId = consorcioId, nombre = "Ana", unidad = "1A", piso = "1", coeficiente = 2.45, esMiembroConsejo = true)
-        )
-        propietario = infoDao.observarPropietario(propietarioId).first()!!.let {
-            Propietario(it.id, it.consorcioId, it.nombre, it.unidad, it.piso, it.coeficiente, it.esMiembroConsejo)
-        }
+        consorcioId = crearConsorcio("Consorcio de prueba")
+        propietario = crearPropietario(consorcioId, nombre = "Ana", unidad = "1A")
     }
 
     @After
@@ -155,6 +149,71 @@ class IntegridadDatosTest {
         assertEquals(1, votos.size)
         assertEquals(opciones[0].id, votos[0].opcionId)
         assertEquals((primero as RegistrarVotoUseCase.Result.Exito).comprobante, votos[0].comprobante)
+    }
+
+    // 4. Una opción de OTRA votación se rechaza, y no se crea ni se modifica ningún voto.
+    @Test
+    fun votoConOpcionDeOtraVotacion_esRechazadoSinTocarLosVotos() = runBlocking {
+        val votacionId = crearVotacionActiva()
+        val otraVotacionId = crearVotacionActiva()
+        val opcionAjena = votacionRepository.observarOpciones(otraVotacionId).first()[0]
+        val registrarVoto = RegistrarVotoUseCase(votacionRepository)
+
+        // Un voto válido previo de otro propietario, que no debe alterarse.
+        val bruno = crearPropietario(consorcioId, nombre = "Bruno", unidad = "2B")
+        val opcionPropia = votacionRepository.observarOpciones(votacionId).first()[0]
+        assertTrue(registrarVoto(votacionId, opcionPropia.id, bruno) is RegistrarVotoUseCase.Result.Exito)
+        val votosAntes = votacionRepository.observarVotos(votacionId).first()
+
+        val resultado = registrarVoto(votacionId, opcionAjena.id, propietario)
+
+        assertEquals(RegistrarVotoUseCase.Result.Error.OpcionInvalida, resultado)
+        assertEquals(votosAntes, votacionRepository.observarVotos(votacionId).first())
+        assertTrue(votacionRepository.observarVotos(otraVotacionId).first().isEmpty())
+    }
+
+    // 5. Un propietario de otro consorcio no puede votar, y no se crea ni se modifica ningún voto.
+    @Test
+    fun votoDePropietarioDeOtroConsorcio_esRechazadoSinTocarLosVotos() = runBlocking {
+        val votacionId = crearVotacionActiva()
+        val opcion = votacionRepository.observarOpciones(votacionId).first()[0]
+        val registrarVoto = RegistrarVotoUseCase(votacionRepository)
+        assertTrue(registrarVoto(votacionId, opcion.id, propietario) is RegistrarVotoUseCase.Result.Exito)
+        val votosAntes = votacionRepository.observarVotos(votacionId).first()
+
+        val extranjero = crearPropietario(crearConsorcio("Otro consorcio"), nombre = "Carla", unidad = "9Z")
+        val resultado = registrarVoto(votacionId, opcion.id, extranjero)
+
+        assertEquals(RegistrarVotoUseCase.Result.Error.PropietarioNoHabilitado, resultado)
+        assertEquals(votosAntes, votacionRepository.observarVotos(votacionId).first())
+    }
+
+    // 6. Documenta qué excepción lanza Room en esta app ante un error de persistencia
+    // (aquí, una clave foránea inválida). Los ViewModels capturan android.database.SQLException.
+    @Test
+    fun errorDePersistencia_esUnaAndroidSQLException() = runBlocking {
+        val votacionId = crearVotacionActiva()
+        val votoConOpcionInexistente = VotoEntity(
+            votacionId = votacionId, opcionId = 999_999, propietarioId = propietario.id,
+            coeficiente = propietario.coeficiente, fechaHora = Instant.now(), comprobante = "X"
+        )
+
+        assertThrows(SQLException::class.java) {
+            runBlocking { db.votacionDao().insertarVoto(votoConOpcionInexistente) }
+        }
+        assertTrue(votacionRepository.observarVotos(votacionId).first().isEmpty())
+    }
+
+    private suspend fun crearConsorcio(nombre: String): Long =
+        db.infoConsorcioDao().insertarConsorcio(
+            ConsorcioEntity(nombre = nombre, direccion = "Calle 123", unidadesTotales = 10)
+        )
+
+    private suspend fun crearPropietario(consorcio: Long, nombre: String, unidad: String): Propietario {
+        val id = db.infoConsorcioDao().insertarPropietario(
+            PropietarioEntity(consorcioId = consorcio, nombre = nombre, unidad = unidad, piso = "1", coeficiente = 2.45, esMiembroConsejo = false)
+        )
+        return Propietario(id, consorcio, nombre, unidad, "1", 2.45, false)
     }
 
     private fun gastoDePrueba(titulo: String) = Gasto(

@@ -111,32 +111,38 @@ class DetalleVotacionViewModel @Inject constructor(
         
         viewModelScope.launch {
             _confirmandoVoto.value = true
-            delay(1200) // Simular comprobación biométrica de identidad
+            try {
+                delay(1200) // Simular comprobación biométrica de identidad
 
-            val propietarioId = sesionRepository.propietarioIdActual.first()
-            val propietario = infoConsorcioRepository.observarPropietario(propietarioId).first()
+                val propietarioId = sesionRepository.propietarioIdActual.first()
+                val propietario = infoConsorcioRepository.observarPropietario(propietarioId).first()
 
-            if (propietario != null) {
-                try {
-                    when (val result = registrarVotoUseCase(votacionId, opcionId, propietario)) {
+                if (propietario == null) {
+                    _mensaje.value = "No se encontró el propietario de la sesión."
+                } else {
+                    _mensaje.value = when (val result = registrarVotoUseCase(votacionId, opcionId, propietario)) {
                         is RegistrarVotoUseCase.Result.Exito -> {
-                            _mensaje.value = "¡Voto registrado con éxito! Comprobante: ${result.comprobante}"
                             _opcionElegidaId.value = null // Resetea seleccion
                             _refrescar.value += 1 // Forzamos recálculo de resultados en UI Flow
+                            "¡Voto registrado con éxito! Comprobante: ${result.comprobante}"
                         }
-                        RegistrarVotoUseCase.Result.Error.YaVoto -> {
-                            _mensaje.value = "Ya registraste tu voto en esta votación. Se conserva tu voto original."
-                        }
-                        is RegistrarVotoUseCase.Result.Error -> {
-                            _mensaje.value = "No se pudo registrar el voto."
-                        }
+                        RegistrarVotoUseCase.Result.Error.VotacionInvalida -> "La votación no existe."
+                        RegistrarVotoUseCase.Result.Error.VotacionCerrada -> "La votación no está abierta."
+                        RegistrarVotoUseCase.Result.Error.OpcionInvalida -> "La opción elegida no pertenece a esta votación."
+                        RegistrarVotoUseCase.Result.Error.PropietarioNoHabilitado -> "Tu unidad no pertenece al consorcio de esta votación."
+                        RegistrarVotoUseCase.Result.Error.YaVoto -> "Ya registraste tu voto en esta votación. Se conserva tu voto original."
                     }
-                } catch (e: SQLException) {
-                    // Un error de la base de datos no debe cerrar la aplicación.
-                    _mensaje.value = "No se pudo registrar el voto."
                 }
+            } catch (e: SQLException) {
+                // Errores de la base de datos (Room usa el SQLite de Android, que lanza
+                // subclases de android.database.SQLException). No capturamos Exception en
+                // general: así no ocultamos errores de programación ni la cancelación
+                // de la corrutina (CancellationException no es una SQLException).
+                _mensaje.value = "No se pudo registrar el voto. Intentá nuevamente."
+            } finally {
+                // Se ejecuta siempre (éxito, error o cancelación): la pantalla nunca queda bloqueada.
+                _confirmandoVoto.value = false
             }
-            _confirmandoVoto.value = false
         }
     }
 

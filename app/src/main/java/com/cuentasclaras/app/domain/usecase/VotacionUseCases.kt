@@ -12,15 +12,30 @@ class RegistrarVotoUseCase(private val repository: VotacionRepository) {
         sealed interface Error : Result {
             object VotacionInvalida : Error
             object VotacionCerrada : Error
+            object OpcionInvalida : Error
+            object PropietarioNoHabilitado : Error
             object YaVoto : Error
         }
     }
 
+    // Validaciones locales de consistencia de los datos. No reemplazan una
+    // autenticación real: la identidad del propietario viene de la sesión simulada.
     suspend operator fun invoke(votacionId: Long, opcionId: Long, propietario: Propietario): Result {
         val votacion = repository.observarVotacion(votacionId).first() ?: return Result.Error.VotacionInvalida
 
         if (votacion.estado != EstadoVotacion.ACTIVA) {
             return Result.Error.VotacionCerrada
+        }
+
+        // La opción elegida tiene que ser una de las opciones de ESTA votación.
+        val opciones = repository.observarOpciones(votacionId).first()
+        if (opciones.none { it.id == opcionId }) {
+            return Result.Error.OpcionInvalida
+        }
+
+        // Solo votan los propietarios del consorcio que convocó la votación.
+        if (propietario.consorcioId != votacion.consorcioId) {
+            return Result.Error.PropietarioNoHabilitado
         }
 
         val votoExistente = repository.observarVotoPropietario(votacionId, propietario.id).first()
@@ -39,8 +54,8 @@ class RegistrarVotoUseCase(private val repository: VotacionRepository) {
             comprobante = comprobante
         )
 
-        // La verificación anterior cubre el caso normal; si igualmente llega un voto
-        // duplicado (por ejemplo, un doble toque), la base lo rechaza y devuelve -1.
+        // Barrera final: la restricción única de Room (votacionId + propietarioId).
+        // Si llega un duplicado (por ejemplo, un doble toque), la base lo rechaza y devuelve -1.
         val votoId = repository.registrarVoto(voto)
         if (votoId == -1L) {
             return Result.Error.YaVoto

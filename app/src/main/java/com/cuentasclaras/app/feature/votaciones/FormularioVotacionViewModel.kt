@@ -155,7 +155,10 @@ class FormularioVotacionViewModel @Inject constructor(
             val guardadoId = try {
                 repository.guardarVotacionConOpciones(votacion, opciones)
             } catch (e: SQLException) {
-                _uiState.update { it.copy(isLoading = false, error = "No se pudo guardar la votación.") }
+                // Solo errores de la base (Room usa el SQLite de Android, cuyas excepciones
+                // heredan de android.database.SQLException). No atrapa errores de programación
+                // ni la cancelación de la corrutina.
+                _uiState.update { it.copy(isLoading = false, error = "No se pudo guardar la votación. Intentá nuevamente.") }
                 return@launch
             }
 
